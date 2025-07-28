@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VIBE CORE - Loja</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -12,7 +12,7 @@
   <header class="bg-white shadow sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
       <h1 class="text-2xl font-bold text-purple-700">VIBE CORE</h1>
-      <input id="search" type="text" placeholder="Buscar..." class="border px-3 py-2 rounded-md w-1/2 focus:outline-none">
+      <input id="search" type="text" placeholder="Buscar..." class="border px-3 py-2 rounded-md w-1/2 focus:outline-none" />
       <button onclick="abrirCarrinho()" class="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800">
         🛒 Carrinho (<span id="cart-count">0</span>)
       </button>
@@ -41,7 +41,6 @@
     © 2025 VIBE CORE. Todos os direitos reservados.
   </footer>
 
-  <!-- Script principal -->
   <script>
     const carrinho = [];
     const carrinhoContainer = document.getElementById("carrinho-itens");
@@ -93,8 +92,8 @@
       window.location.href = url;
     }
 
-    // Buscar produtos da API
-    fetch("http://localhost:3000/produtos")
+    // Buscar produtos da API (ajuste a URL)
+    fetch("https://seuapp.onrender.com/produtos")
       .then(res => res.json())
       .then(produtos => {
         const container = document.getElementById("produto-container");
