@@ -1,86 +1,103 @@
-require("dotenv").config();
-const express = require("express");
-const { Pool } = require("pg");
-const bodyParser = require("body-parser");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import pg from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configura o Pool com SSL para o Render
-const pool = new Pool({
+const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false }, // IMPORTANTE para Render e outros serviços que exigem SSL
 });
 
-// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// Criação da tabela (caso não exista)
-const createTable = `
-  CREATE TABLE IF NOT EXISTS produtos (
-    id SERIAL PRIMARY KEY,
-    nome TEXT NOT NULL,
-    preco REAL NOT NULL,
-    imagem TEXT
-  );
-`;
+// Criar tabela produtos se não existir
+async function criarTabela() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS produtos (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(100) NOT NULL,
+        preco NUMERIC(10, 2) NOT NULL CHECK(preco >= 0),
+        imagem TEXT
+      );
+    `);
+    console.log("Tabela produtos pronta.");
+  } catch (error) {
+    console.error("Erro ao criar tabela:", error);
+  }
+}
 
-pool.query(createTable)
-  .then(() => console.log("Tabela 'produtos' pronta."))
-  .catch(err => console.error("Erro ao criar tabela:", err));
+criarTabela();
 
-// Rotas
+// GET todos produtos
 app.get("/produtos", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM produtos");
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json(err);
+    const resultado = await pool.query("SELECT * FROM produtos ORDER BY id ASC");
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error("Erro ao buscar produtos:", error);
+    res.status(500).json({ error: "Erro ao buscar produtos" });
   }
 });
 
+// POST novo produto
 app.post("/produtos", async (req, res) => {
-  const { nome, preco, imagem } = req.body;
   try {
-    const result = await pool.query(
-      "INSERT INTO produtos (nome, preco, imagem) VALUES ($1, $2, $3) RETURNING id",
-      [nome, preco, imagem]
+    const { nome, preco, imagem } = req.body;
+    if (!nome || preco == null || preco < 0) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+    const resultado = await pool.query(
+      "INSERT INTO produtos (nome, preco, imagem) VALUES ($1, $2, $3) RETURNING *",
+      [nome, preco, imagem || null]
     );
-    res.json({ id: result.rows[0].id });
-  } catch (err) {
-    res.status(500).json(err);
+    res.status(201).json(resultado.rows[0]);
+  } catch (error) {
+    console.error("Erro ao adicionar produto:", error);
+    res.status(500).json({ error: "Erro ao adicionar produto" });
   }
 });
 
+// PUT editar produto
 app.put("/produtos/:id", async (req, res) => {
-  const { nome, preco, imagem } = req.body;
-  const { id } = req.params;
   try {
-    const result = await pool.query(
-      "UPDATE produtos SET nome = $1, preco = $2, imagem = $3 WHERE id = $4",
-      [nome, preco, imagem, id]
+    const { id } = req.params;
+    const { nome, preco, imagem } = req.body;
+    if (!nome || preco == null || preco < 0) {
+      return res.status(400).json({ error: "Dados inválidos" });
+    }
+    const resultado = await pool.query(
+      "UPDATE produtos SET nome = $1, preco = $2, imagem = $3 WHERE id = $4 RETURNING *",
+      [nome, preco, imagem || null, id]
     );
-    res.json({ updated: result.rowCount });
-  } catch (err) {
-    res.status(500).json(err);
+    if (resultado.rowCount === 0) return res.status(404).json({ error: "Produto não encontrado" });
+    res.json(resultado.rows[0]);
+  } catch (error) {
+    console.error("Erro ao editar produto:", error);
+    res.status(500).json({ error: "Erro ao editar produto" });
   }
 });
 
+// DELETE produto
 app.delete("/produtos/:id", async (req, res) => {
-  const { id } = req.params;
   try {
-    const result = await pool.query("DELETE FROM produtos WHERE id = $1", [id]);
-    res.json({ deleted: result.rowCount });
-  } catch (err) {
-    res.status(500).json(err);
+    const { id } = req.params;
+    const resultado = await pool.query("DELETE FROM produtos WHERE id = $1", [id]);
+    if (resultado.rowCount === 0) return res.status(404).json({ error: "Produto não encontrado" });
+    res.json({ message: "Produto excluído" });
+  } catch (error) {
+    console.error("Erro ao excluir produto:", error);
+    res.status(500).json({ error: "Erro ao excluir produto" });
   }
 });
 
-// Inicia o servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
+
