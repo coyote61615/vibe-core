@@ -10,7 +10,6 @@
 
   <h1 class="text-3xl font-bold mb-6 text-purple-700">Painel de Administração - VIBE CORE</h1>
 
-  <!-- Formulário para adicionar produto -->
   <section class="bg-white p-6 rounded shadow mb-8 max-w-xl">
     <h2 class="text-xl font-semibold mb-4">Adicionar Novo Produto</h2>
     <form id="form-add-produto" class="space-y-4">
@@ -32,7 +31,6 @@
     </form>
   </section>
 
-  <!-- Tabela de produtos -->
   <table class="w-full bg-white shadow rounded-lg overflow-hidden">
     <thead class="bg-purple-600 text-white">
       <tr>
@@ -47,9 +45,8 @@
   </table>
 
   <script>
-    const API_URL = "http://localhost:3000/produtos";
+    const API_URL = "https://seuapp.onrender.com/produtos"; // ajuste para sua URL do render
 
-    // Carregar produtos e mostrar na tabela
     async function carregarProdutos() {
       try {
         const res = await fetch(API_URL);
@@ -83,7 +80,6 @@
       }
     }
 
-    // Editar produto
     async function editarProduto(id) {
       const nome = document.getElementById(`nome-${id}`).value.trim();
       const preco = parseFloat(document.getElementById(`preco-${id}`).value);
@@ -94,9 +90,7 @@
         return;
       }
 
-      if (!imagem || imagem.trim() === "") {
-        imagem = null;
-      }
+      if (!imagem || imagem.trim() === "") imagem = null;
 
       try {
         const res = await fetch(`${API_URL}/${id}`, {
@@ -112,7 +106,6 @@
       }
     }
 
-    // Excluir produto
     async function excluirProduto(id) {
       if (confirm("Tem certeza que deseja excluir este produto?")) {
         try {
@@ -126,7 +119,6 @@
       }
     }
 
-    // Adicionar novo produto
     document.getElementById("form-add-produto").addEventListener("submit", async function(event) {
       event.preventDefault();
 
@@ -139,9 +131,7 @@
         return;
       }
 
-      if (imagem === "") {
-        imagem = null;
-      }
+      if (imagem === "") imagem = null;
 
       try {
         const res = await fetch(API_URL, {
