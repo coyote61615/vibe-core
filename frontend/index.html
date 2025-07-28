@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VIBE CORE - Loja</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- Cabeçalho -->
+  <header class="bg-white shadow sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-purple-700">VIBE CORE</h1>
+      <input id="search" type="text" placeholder="Buscar..." class="border px-3 py-2 rounded-md w-1/2 focus:outline-none">
+      <button onclick="abrirCarrinho()" class="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800">
+        🛒 Carrinho (<span id="cart-count">0</span>)
+      </button>
+    </div>
+  </header>
+
+  <!-- Produtos -->
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <h2 class="text-xl font-bold mb-4">Produtos</h2>
+    <div id="produto-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+  </main>
+
+  <!-- Carrinho -->
+  <div id="carrinho" class="fixed right-4 top-20 bg-white shadow-lg p-4 rounded-md w-80 hidden z-50">
+    <h3 class="text-lg font-semibold mb-2">🛍️ Seu Carrinho</h3>
+    <ul id="carrinho-itens" class="mb-2 max-h-52 overflow-y-auto"></ul>
+    <p class="font-bold mb-2">Total: R$ <span id="carrinho-total">0.00</span></p>
+    <button onclick="finalizarCompra()" class="bg-green-600 text-white w-full py-2 rounded hover:bg-green-700">
+      Finalizar Pedido via WhatsApp
+    </button>
+    <button onclick="fecharCarrinho()" class="mt-2 w-full text-sm text-gray-500 hover:underline">Fechar</button>
+  </div>
+
+  <!-- Rodapé -->
+  <footer class="bg-white border-t py-4 text-center text-gray-500 text-sm mt-10">
+    © 2025 VIBE CORE. Todos os direitos reservados.
+  </footer>
+
+  <!-- Script principal -->
+  <script>
+    const carrinho = [];
+    const carrinhoContainer = document.getElementById("carrinho-itens");
+    const carrinhoTotal = document.getElementById("carrinho-total");
+    const carrinhoBox = document.getElementById("carrinho");
+    const cartCount = document.getElementById("cart-count");
+
+    function atualizarCarrinho() {
+      carrinhoContainer.innerHTML = "";
+      let total = 0;
+      carrinho.forEach((item, index) => {
+        total += item.preco;
+        carrinhoContainer.innerHTML += `
+          <li class="flex justify-between items-center border-b py-1">
+            <span>${item.nome}</span>
+            <span class="flex items-center gap-4">
+              R$ ${item.preco.toFixed(2)}
+              <button onclick="removerDoCarrinho(${index})" class="text-red-600 hover:text-red-800 font-bold">×</button>
+            </span>
+          </li>
+        `;
+      });
+      carrinhoTotal.innerText = total.toFixed(2);
+      cartCount.innerText = carrinho.length;
+    }
+
+    function adicionarAoCarrinho(produto) {
+      carrinho.push(produto);
+      atualizarCarrinho();
+    }
+
+    function removerDoCarrinho(index) {
+      carrinho.splice(index, 1);
+      atualizarCarrinho();
+    }
+
+    function abrirCarrinho() {
+      carrinhoBox.classList.remove("hidden");
+    }
+
+    function fecharCarrinho() {
+      carrinhoBox.classList.add("hidden");
+    }
+
+    function finalizarCompra() {
+      const numero = "5597981132190";
+      const mensagem = "Olá! Aguarde um instante que um de nossos atendentes já vai entrar em contato para finalizar sua compra. Desde já, agradecemos seu contato! 💜🛍️";
+      const url = `https://api.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(mensagem)}`;
+      window.location.href = url;
+    }
+
+    // Buscar produtos da API
+    fetch("http://localhost:3000/produtos")
+      .then(res => res.json())
+      .then(produtos => {
+        const container = document.getElementById("produto-container");
+        produtos.forEach(prod => {
+          const card = document.createElement("div");
+          card.className = "bg-white p-4 rounded shadow hover:shadow-md transition";
+          card.innerHTML = `
+            <img src="${prod.imagem || 'https://via.placeholder.com/150'}" class="h-40 w-full object-cover rounded" />
+            <h2 class="font-semibold mt-2 text-purple-700">${prod.nome}</h2>
+            <p class="text-green-600 font-bold mb-2">R$ ${prod.preco.toFixed(2)}</p>
+            <button class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 w-full">
+              Adicionar ao Carrinho
+            </button>
+          `;
+          card.querySelector("button").addEventListener("click", () => {
+            adicionarAoCarrinho(prod);
+          });
+          container.appendChild(card);
+        });
+      });
+  </script>
+</body>
+</html>

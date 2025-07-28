@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin - VIBE CORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 p-8">
+
+  <h1 class="text-3xl font-bold mb-6 text-purple-700">Painel de Administração - VIBE CORE</h1>
+
+  <!-- Formulário para adicionar produto -->
+  <section class="bg-white p-6 rounded shadow mb-8 max-w-xl">
+    <h2 class="text-xl font-semibold mb-4">Adicionar Novo Produto</h2>
+    <form id="form-add-produto" class="space-y-4">
+      <div>
+        <label for="nome" class="block font-medium mb-1">Nome:</label>
+        <input type="text" id="nome" name="nome" required class="w-full border rounded px-3 py-2" />
+      </div>
+      <div>
+        <label for="preco" class="block font-medium mb-1">Preço (R$):</label>
+        <input type="number" id="preco" name="preco" required step="0.01" min="0" class="w-full border rounded px-3 py-2" />
+      </div>
+      <div>
+        <label for="imagem" class="block font-medium mb-1">URL da Imagem (opcional):</label>
+        <input type="url" id="imagem" name="imagem" class="w-full border rounded px-3 py-2" placeholder="https://exemplo.com/imagem.jpg" />
+      </div>
+      <button type="submit" class="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800">
+        Adicionar Produto
+      </button>
+    </form>
+  </section>
+
+  <!-- Tabela de produtos -->
+  <table class="w-full bg-white shadow rounded-lg overflow-hidden">
+    <thead class="bg-purple-600 text-white">
+      <tr>
+        <th class="p-3 text-left">ID</th>
+        <th class="p-3 text-left">Nome</th>
+        <th class="p-3 text-left">Preço</th>
+        <th class="p-3 text-left">Imagem</th>
+        <th class="p-3 text-left">Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tabela-produtos" class="divide-y divide-gray-200"></tbody>
+  </table>
+
+  <script>
+    const API_URL = "http://localhost:3000/produtos";
+
+    // Carregar produtos e mostrar na tabela
+    async function carregarProdutos() {
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error("API não retornou produtos.");
+        const produtos = await res.json();
+
+        const tabela = document.getElementById("tabela-produtos");
+        tabela.innerHTML = "";
+        produtos.forEach(prod => {
+          tabela.innerHTML += `
+            <tr>
+              <td class="p-3">${prod.id}</td>
+              <td class="p-3">
+                <input value="${prod.nome}" id="nome-${prod.id}" class="border px-2 py-1 rounded w-full" />
+              </td>
+              <td class="p-3">
+                <input type="number" value="${prod.preco}" id="preco-${prod.id}" class="border px-2 py-1 rounded w-full" />
+              </td>
+              <td class="p-3">
+                ${prod.imagem ? `<img src="${prod.imagem}" alt="Imagem" class="h-10 rounded" />` : 'Sem imagem'}
+              </td>
+              <td class="p-3 space-x-2">
+                <button onclick="editarProduto(${prod.id})" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Salvar</button>
+                <button onclick="excluirProduto(${prod.id})" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Excluir</button>
+              </td>
+            </tr>
+          `;
+        });
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // Editar produto
+    async function editarProduto(id) {
+      const nome = document.getElementById(`nome-${id}`).value.trim();
+      const preco = parseFloat(document.getElementById(`preco-${id}`).value);
+      let imagem = prompt("Digite nova URL da imagem (ou deixe em branco para manter):");
+
+      if (!nome || isNaN(preco) || preco < 0) {
+        alert("Preencha nome válido e preço maior ou igual a zero.");
+        return;
+      }
+
+      if (!imagem || imagem.trim() === "") {
+        imagem = null;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome, preco, imagem }),
+        });
+        if (!res.ok) throw new Error("Erro ao atualizar produto.");
+        alert("Produto atualizado com sucesso!");
+        carregarProdutos();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // Excluir produto
+    async function excluirProduto(id) {
+      if (confirm("Tem certeza que deseja excluir este produto?")) {
+        try {
+          const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+          if (!res.ok) throw new Error("Erro ao excluir produto.");
+          alert("Produto excluído.");
+          carregarProdutos();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    }
+
+    // Adicionar novo produto
+    document.getElementById("form-add-produto").addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const nome = this.nome.value.trim();
+      const preco = parseFloat(this.preco.value);
+      let imagem = this.imagem.value.trim();
+
+      if (!nome || isNaN(preco) || preco < 0) {
+        alert("Preencha nome válido e preço maior ou igual a zero.");
+        return;
+      }
+
+      if (imagem === "") {
+        imagem = null;
+      }
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome, preco, imagem }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Erro ao adicionar produto.");
+        }
+        alert("Produto adicionado com sucesso!");
+        this.reset();
+        carregarProdutos();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    carregarProdutos();
+  </script>
+</body>
+</html>
